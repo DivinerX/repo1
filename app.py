@@ -42,7 +42,7 @@ def generate_music_api():
 
 
 # Function to generate music using Melody RNN
-def generate_music(output_dir, num_outputs=3, num_steps=128):
+def generate_music(output_dir, num_outputs=2):
     config = "cat-mel_2bar_big"
     checkpoint_file = "cat-mel_2bar_big.tar"
     mode = "sample"
