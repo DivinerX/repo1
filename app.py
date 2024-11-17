@@ -43,24 +43,22 @@ def generate_music_api():
 
 # Function to generate music using Melody RNN
 def generate_music(output_dir, num_outputs=1, num_steps=128):
-    config = "attention_rnn"
-    bundle_path = "attention_rnn.mag"
-    primer_melody = "[60, 62, 64, 65]"
+    config = "cat-mel_2bar_big"
+    checkpoint_file = "cat-mel_2bar_big.tar"
+    mode = "sample"
 
     command = [
-        "melody_rnn_generate",
+        "music_vae_generate",
         "--config",
         config,
-        "--bundle_file",
-        bundle_path,
+        "--checkpoint_file",
+        checkpoint_file,
         "--output_dir",
         output_dir,
         "--num_outputs",
         str(num_outputs),
-        "--num_steps",
-        str(num_steps),
-        "--primer_melody",
-        primer_melody,
+        "--mode",
+        mode
     ]
 
     subprocess.run(command, check=True)
@@ -114,6 +112,28 @@ def home():
             #music-list button {
                 margin: 5px;
             }
+            #loading-message {
+                font-size: 18px;
+                color: #555;
+            }
+            .spinner {
+                margin: 10px auto;
+                border: 4px solid #f3f3f3;
+                border-top: 4px solid #3498db;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+            }
+
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
         </style>
     </head>
     <body>
@@ -127,13 +147,31 @@ def home():
         <script>
             document.getElementById("generate-music").addEventListener("click", async () => {
                 try {
+                    // Show loading message and spinner
+                    const generateButton = document.getElementById("generate-music");
+                    const musicList = document.getElementById("music-list");
+                    const loadingMessage = document.createElement("div");
+                    loadingMessage.id = "loading-message";
+                    loadingMessage.innerHTML = `
+                        <div class="spinner"></div>
+                        <div>Generating music, please wait...</div>
+                    `;
+                    musicList.innerHTML = ""; // Clear previous files
+                    musicList.appendChild(loadingMessage);
+
+                    // Disable the button to prevent multiple clicks
+                    generateButton.disabled = true;
+
+                    // Make the API call
                     const response = await fetch("/generate", { method: "POST" });
                     const data = await response.json();
                     const files = data.files;
 
-                    const musicList = document.getElementById("music-list");
-                    musicList.innerHTML = ""; // Clear previous files
+                    // Remove loading message and re-enable the button
+                    musicList.removeChild(loadingMessage);
+                    generateButton.disabled = false;
 
+                    // Populate the music list with buttons to play files
                     files.forEach((file) => {
                         const fileItem = document.createElement("button");
                         fileItem.textContent = `Play ${file.split('/').pop()}`;
@@ -146,6 +184,14 @@ def home():
                     });
                 } catch (error) {
                     console.error("Error generating music:", error);
+
+                    // Handle errors
+                    const musicList = document.getElementById("music-list");
+                    musicList.innerHTML = `<div style="color: red;">Error generating music. Please try again later.</div>`;
+
+                    // Re-enable the button
+                    const generateButton = document.getElementById("generate-music");
+                    generateButton.disabled = false;
                 }
             });
         </script>
